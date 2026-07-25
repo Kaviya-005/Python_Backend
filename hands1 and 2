@@ -1,0 +1,151 @@
+INSTALLED_APPS = [
+    ...
+    'courses',
+]
+
+from django.http import HttpResponse
+
+def hello_view(request):
+    return HttpResponse("Course Management API is running")
+
+
+from django.urls import path
+from .views import hello_view
+
+urlpatterns = [
+    path("hello/", hello_view),
+]
+
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("courses.urls")),
+]
+
+
+pip install django
+django-admin startproject coursemanager
+cd coursemanager
+python manage.py startapp courses
+python manage.py runserver
+
+
+//hands on 2
+
+from django.db import models
+
+class Department(models.Model):
+    name = models.CharField(max_length=100)
+    head_of_dept = models.CharField(max_length=100)
+    budget = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.name
+
+
+class Course(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, unique=True)
+    credits = models.IntegerField()
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class Student(models.Model):
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField(unique=True)
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.CASCADE
+    )
+    enrollment_year = models.IntegerField()
+
+    def __str__(self):
+        return self.first_name
+
+
+class Enrollment(models.Model):
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE
+    )
+    enrollment_date = models.DateField()
+    grade = models.CharField(
+        max_length=5,
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        unique_together = [
+            ["student", "course"]
+        ]
+
+    def __str__(self):
+        return f"{self.student} - {self.course}"
+
+
+
+
+    from courses.models import *
+from django.db.models import Count, F
+
+
+
+d = Department.objects.create(
+    name="Computer Science",
+    head_of_dept="Dr. Kumar",
+    budget=500000
+)
+
+Course.objects.create(
+    name="Python",
+    code="CS101",
+    credits=4,
+    department=d
+)
+
+
+Student.objects.select_related(
+    "department"
+)
+
+
+from django.contrib import admin
+from .models import *
+
+admin.site.register(Department)
+admin.site.register(Student)
+admin.site.register(Enrollment)
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "name",
+        "code",
+        "credits",
+        "department"
+    )
+
+    search_fields = (
+        "name",
+        "code"
+    )
+
+    list_filter = (
+        "department",
+    )
